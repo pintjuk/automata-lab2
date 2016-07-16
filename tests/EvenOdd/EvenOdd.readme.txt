@@ -1,0 +1,52 @@
+EvenOdd.cfg
+  contains a flow graph that was automatically
+  extracted from a java program. The program uses
+  indirect recursion. Method odd may call method
+  even (or return) and vice versa. There is also
+  an initialization methods that calls an external
+  library function. The main method first invokes
+  initialization before handing control to method
+  even. Note that method belonging to the program
+  itself are labelled EvenOdd-... while external
+  library functions have a different prefix. The
+  EvenOdd-prefix is omitted in the specifications,
+  however.
+
+
+EvenOdd1a.spec
+  specifies that two between two invocations of even
+  there should be one invocation of odd, and vice versa.
+  Since the initialization functions are not explicitly
+  mentioned in the DFA, it depends on your tool's default
+  behaviour whether the control flow graph from above
+  is accepted or not.
+
+
+EvenOdd1b.spec
+  is the inverse of EvenOdd1a and requires that method
+  even or method odd gets invoked twice in a row without
+  calling the other method in between. This specification
+  should lead to rejection, since (after initialization)
+  even-odd, even-odd-even, or just even are counterexamples.
+
+
+EvenOdd2a.spec
+  is like EvenOdd1a, but includes the initialization
+  (invocable at any time).
+  The flow graph should be accepted by this specification.
+
+
+EvenOdd2b.spec
+  is the inverse of EvenOdd2a and should lead to rejection.
+
+
+EvenOdd3a.spec
+  specifies that init should be called before odd.
+  Therefore, the control flow graph from above should
+  be accepted.
+
+
+EvenOdd3b.spec
+  specifies that odd should be called and moreover before
+  method init is.
+  The specification should reject the flow graph from above.

@@ -1,0 +1,27 @@
+Vote.cfg
+  contains a flow graph that was automatically
+  extracted from a bigger java program implementing
+  a voting protocol. Note that methods belonging
+  to the program itself are labelled Vote-... while
+  external library functions have a different prefix.
+  The Vote-prefix is omitted in the specifications,
+  however.
+
+
+Vote_ne.cfg
+  is the same flow graph, but cleaned from any
+  information related to exceptions.
+
+
+Vote_v.spec
+  specifies that method vote has to be called before
+  method getVote.
+  At least if your tool is liberal with external library
+  calls, this specification should accept the above
+  flow graph.
+
+
+Vote_gv.spec
+  specifies that method getVote has to be called before
+  method vote.
+  This specification would reject the above flow graph.

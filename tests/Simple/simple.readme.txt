@@ -1,0 +1,11 @@
+example_task_description.cfg
+  contains the flow graph example from the task description,
+  representing a simple program with a main function that
+  branches on some value and then either calls method a or returns.
+  Similarly, method a either calls itself recursively or returns.
+
+example_task_description.spec
+  contains the specification example from the task description.
+  It specifies that at most one call is allowed, namely to method a.
+  The given flow graph violates this specification, so your tool
+  should output a counterexample.
