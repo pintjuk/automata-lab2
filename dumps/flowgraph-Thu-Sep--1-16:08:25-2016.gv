@@ -1,0 +1,19 @@
+digraph G {
+	size = "4,4";
+	shape=circle
+	"inite" -> "initr"[label="eps"]
+	"main0" -> "main1"[label="init"]
+	"main1" -> "main3"[label="test"]
+	"test1" -> "test2"[label="enque"]
+	"test1" -> "test3"[label="eps"]
+	"test2" -> "test1"[label="eps"]
+	"init"[shape=box, style=filled,color=".7 .3 1.0",size ="3,3"]
+	"init" -> "inite"
+	initr[shape=doublecircle]
+	"main"[shape=box, style=filled,color=".7 .3 1.0",size ="3,3"]
+	"main" -> "main0"
+	main3[shape=doublecircle]
+	"test"[shape=box, style=filled,color=".7 .3 1.0",size ="3,3"]
+	"test" -> "test1"
+	test3[shape=doublecircle]
+}

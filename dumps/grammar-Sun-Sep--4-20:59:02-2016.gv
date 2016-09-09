@@ -1,0 +1,4 @@
+digraph G {
+	size = "4,4";
+	rankdir = LR
+}

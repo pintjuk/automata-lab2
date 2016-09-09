@@ -1,0 +1,29 @@
+digraph G {
+	size = "4,4";
+	rankdir = LR
+	node [shape = doublecircle]; q0; q1;
+	node [shape = point]; point_q0;
+	node [shape = circle];
+	 point_q0 -> q0
+	q0 -> q0[label="eps"]
+	q0 -> q0[label="submit"]
+	q0 -> q0[label="init"]
+	q0 -> q0[label="handle"]
+	q0 -> q0[label="main"]
+	q0 -> q1[label="vote"]
+	q1 -> q1[label="eps"]
+	q1 -> q1[label="submit"]
+	q1 -> q1[label="main"]
+	q1 -> q1[label="vote"]
+	q1 -> q1[label="getVote"]
+	q1 -> q1[label="init"]
+	q1 -> q1[label="handle"]
+	q0 -> q2[label="getVote"]
+	q2 -> q2[label="eps"]
+	q2 -> q2[label="submit"]
+	q2 -> q2[label="main"]
+	q2 -> q2[label="vote"]
+	q2 -> q2[label="getVote"]
+	q2 -> q2[label="init"]
+	q2 -> q2[label="handle"]
+}

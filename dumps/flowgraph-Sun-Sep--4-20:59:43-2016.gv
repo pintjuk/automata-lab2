@@ -1,0 +1,16 @@
+digraph G {
+	size = "4,4";
+	shape=circle
+	"v0" -> "v1"[label="eps"]
+	"v0" -> "v2"[label="a"]
+	"v3" -> "v4"[label="eps"]
+	"v3" -> "v5"[label="a"]
+	"a"[shape=box, style=filled,color=".7 .3 1.0",size ="3,3"]
+	"a" -> "v3"
+	v4[shape=doublecircle]
+	v5[shape=doublecircle]
+	"main"[shape=box, style=filled,color=".7 .3 1.0",size ="3,3"]
+	"main" -> "v0"
+	v1[shape=doublecircle]
+	v2[shape=doublecircle]
+}

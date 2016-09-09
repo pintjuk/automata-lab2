@@ -1,0 +1,26 @@
+digraph G {
+	size = "4,4";
+	rankdir = LR
+	node [shape = doublecircle]; q2;
+	node [shape = point]; point_q0;
+	node [shape = circle];
+	 point_q0 -> q0
+	q0 -> q0[label="eps"]
+	q0 -> q0[label="even"]
+	q0 -> q0[label="java-lang-Object-_init_"]
+	q0 -> q1[label="_init_"]
+	q1 -> q1[label="eps"]
+	q1 -> q1[label="even"]
+	q1 -> q1[label="java-lang-Object-_init_"]
+	q1 -> q1[label="_init_"]
+	q1 -> q1[label="odd"]
+	q0 -> q2[label="odd"]
+	q2 -> q2[label="eps"]
+	q2 -> q2[label="even"]
+	q2 -> q2[label="java-lang-Object-_init_"]
+	q2 -> q2[label="_init_"]
+	q2 -> q2[label="odd"]
+	q0 -> q0[label="main"]
+	q1 -> q1[label="main"]
+	q2 -> q2[label="main"]
+}

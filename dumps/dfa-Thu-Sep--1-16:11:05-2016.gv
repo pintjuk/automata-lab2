@@ -1,0 +1,26 @@
+digraph G {
+	size = "4,4";
+	rankdir = LR
+	node [shape = doublecircle]; q0; q1; q2; q3; q4; q5;
+	node [shape = point]; point_q0;
+	node [shape = circle];
+	 point_q0 -> q0
+	q0 -> q0[label="eps"]
+	q0 -> q1[label="enque"]
+	q0 -> q20[label="deque"]
+	q1 -> q1[label="eps"]
+	q1 -> q2[label="enque"]
+	q1 -> q0[label="deque"]
+	q2 -> q2[label="eps"]
+	q2 -> q3[label="enque"]
+	q2 -> q1[label="deque"]
+	q3 -> q3[label="eps"]
+	q3 -> q4[label="enque"]
+	q3 -> q2[label="deque"]
+	q4 -> q4[label="eps"]
+	q4 -> q5[label="enque"]
+	q4 -> q3[label="deque"]
+	q5 -> q5[label="eps"]
+	q5 -> q20[label="enque"]
+	q5 -> q4[label="deque"]
+}

@@ -1,0 +1,8 @@
+digraph G {
+	size = "4,4";
+	rankdir = LR
+	node [shape = doublecircle];
+	node [shape = point]; point_q0;
+	node [shape = circle];
+	 point_q0 -> q0
+}

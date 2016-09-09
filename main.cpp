@@ -5,7 +5,7 @@
 #include <map>
 #include <sstream>
 #include <stdio.h>
-#include <string.h>
+#include <string>
 #include <string>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -13,9 +13,12 @@
 #include <vector>
 #include <regex>
 #include <set>
+#include <list>
 typedef unsigned int uint;
 
 using namespace std;
+
+bool enable_complete=false;
 
 vector<string> string_split(string s, const char delimiter)
 {
@@ -96,6 +99,7 @@ pid_t execute_command(const char *path, char * argv[])
     }
 
 }
+
 class flowgraph
 {
 public:
@@ -134,16 +138,18 @@ public:
                 regex ismain("(.*)(main)");
                 if( regex_match(m_name, sm, ismain) )
                 {
+                    cout << sm[1];
+                    cout << sm[3];
                     module_name=sm[1];
-                    main = &methods[sm[2]];
+                    main = &methods["main"];
+                    methods["main"].name="main";
                     break;
                 } 
             }
 
         }
 
-        ctf_getname.close(); 
-        cout << "\nmodule name: "<< module_name << "\n";
+        ctf_getname.close();
         num_nodes=0;
         ifstream ctf_stream(filename);
         while (getline(ctf_stream, line))
@@ -170,24 +176,29 @@ public:
                 string m_name=wards[2];
                 cout << m_name <<"\n";
                 smatch sm_remove_module_name;
-                regex remove_module_name("meth\\("+ module_name+"([a-zA-Z0-9_]*)\\)");
+                regex remove_module_name("meth\\("+ module_name+"([a-zA-Z0-9_-]*)\\)");
                 if(!regex_match(m_name, sm_remove_module_name, remove_module_name))
                 {
                     continue;
                 }
                 m_name=sm_remove_module_name[1];
                 num_nodes++;
-                cout << "**** > " << m_name << "\n";
+                cout << "-- " << m_name << " " << node << "\n";
                 methods[m_name].name=m_name;
                 methods[m_name].nodes.push_back(node);
+                cout << wards.size() << endl;
                 if(wards.size()>3)
                 {
                     if( wards[3] == "entry" )
                     {
+                        cout << "lelwhat"<<endl;
+                        cout << "entry node: " << node << endl; 
                         methods[m_name].entry = node;
+                        cout << "actual entry node: " << methods[m_name].entry << endl;
                     }
                     if ( wards[3] == "ret" )
                     {
+                        cout << "ret node:" << node << "\n";
                         methods[m_name].ret.push_back(node);
                     }
                 }
@@ -199,10 +210,11 @@ public:
                 this_edge.to =  wards[2];
                 string m_name = wards[3];
                 smatch sm_remove_module_name;
-                regex remove_module_name(module_name+"([a-zA-Z0-9_]*)");
+                regex remove_module_name("(?:"+module_name+")?([a-zA-Z0-9_-]*)");
                 if(regex_match(m_name, sm_remove_module_name, remove_module_name))
                 {
                     this_edge.epsilon = false;
+                    cout << sm_remove_module_name[1] << "\n";
                     this_edge.method = sm_remove_module_name[1];
                 }
                 else
@@ -211,16 +223,18 @@ public:
                     this_edge.method = "eps";
                 }
 
-                this_edge.method = wards[3];
+                //this_edge.method = wards[3];
                 edges.push_back(this_edge);
             }
-            
-
             for(string ward: wards)
             {
-                cout << " <" << ward << ">";
+                cout << "<";
+                cout << ward;
+                cout << ">";
+                cout << " ";
+
             }
-            cout << "\n";
+            cout << endl;
             
         }
 
@@ -244,14 +258,14 @@ public:
             for(flowedge e: edges)
             {
                 //cout << e.from << " -> " << e.to << "[label=\""<< e.method <<"\"]\n";
-                myfile << "\t" << e.from << " -> " << e.to << "[label=\""<< e.method <<"\"]\n";
+                myfile << "\t\"" << e.from << "\" -> \"" << e.to << "\"[label=\""<< e.method <<"\"]\n";
             }
             
             for (auto& kv : methods) {
                 string modname=kv.second.name;
                 replace(modname.begin(), modname.end(), '-', '_');
-                myfile << "\t" << modname << "[shape=box, style=filled,color=\".7 .3 1.0\",size =\"3,3\"]\n";
-                myfile << "\t" << modname << " -> " << kv.second.entry << "\n";
+                myfile << "\t\"" << modname << "\"[shape=box, style=filled,color=\".7 .3 1.0\",size =\"3,3\"]\n";
+                myfile << "\t\"" << modname << "\" -> \"" << kv.second.entry << "\"\n";
                 for(auto r: kv.second.ret)
                 {
                     myfile << "\t" << r << "[shape=doublecircle]\n"; 
@@ -304,6 +318,7 @@ class dfa
 {
 public:
     set<int> nodes;
+    set<string> symbols;
     vector<trans>   transitions;
     set<int>        F;
     int             s;
@@ -311,22 +326,57 @@ public:
     dfa()
     {
     }
-    dfa(string filename)
+    
+    void compleate(set<string> methods)
+    {
+        cout << "&&&&&&&&&&\n";
+        vector<trans> toadd;
+        for(auto t: transitions)
+        {
+           // cout <<t.from << " "<< t.symbol <<" "<< t.to << endl;
+        } 
+
+        for(int node:nodes)
+        {
+            for(string method: methods)
+            {
+                bool covered = any_of(
+                        transitions.begin(), 
+                        transitions.end(), 
+                        [method, node](trans t){return t.from==node && t.symbol==method;});
+
+                if(!covered)
+                {
+                    cout << node << " ";
+                    cout << method << endl;
+                    trans newtrans;
+                    newtrans.from=node;
+                    newtrans.symbol=method;
+                    newtrans.to=node;
+                    toadd.push_back(newtrans);
+                }
+            }
+        }
+        transitions.insert(transitions.end(), toadd.begin(), toadd.end());
+    }
+
+    dfa(string filename, set<string> methods)
     {
         ifstream ctf_stream(filename);
         string line;
         while (getline(ctf_stream, line))
         {
             //cout << line << "\n";
-            regex first(".*[\\[\\(]q([0-9]+)[\\]\\)]-([a-zA-Z_-]*)->[\\[\\(]q([0-9]+)[\\]\\)]");
+            regex first(".*[\\[\\(]q([0-9]+)[\\]\\)]-([a-zA-Z0-9_-]*)->[\\[\\(]q([0-9]+)[\\]\\)]");
             regex start(".*=>[\\[\\(]q([0-9]+)[\\]\\)].*");
             regex final1("=?>?\\(q([0-9]+)\\).*");
             regex final2(".*->\\(q([0-9]+)\\)");
             smatch sm;
             if(regex_match(line, sm,first))
             {
+                cout << "first: " << line << "\n";
                 trans newtrans;
-                newtrans.from = stoi(sm[1]); 
+                newtrans.from = stoi(sm[1]);
                 newtrans.symbol = sm[2];
                 newtrans.to   = stoi(sm[3]);
                 transitions.push_back(newtrans);
@@ -337,28 +387,41 @@ public:
             if(regex_match(line, sm, start))
             { 
                 s=stoi(sm[1]);
-
+                cout <<"start: " << line << "\n";
             }
 
             if(regex_match(line, sm, final1))
             {
                 F.insert(stoi(sm[1]));
-
+                cout << "final1: " << line << "\n";
             }
 
             if(regex_match(line, sm, final2))
             {   
                 F.insert(stoi(sm[1]));
+                cout << "final2: " << line << "\n";
             }
-
+            cout << line << "\n";
             
         }
+        
+        //if(enable_complete)
+        {
+            compleate(methods);
+        }
 
+        for(trans t: transitions)
+        {
+            symbols.insert(t.symbol);
+        }
     }
+
+    
     dfa invert(){
         dfa newdfa;
         newdfa.nodes=nodes;
         newdfa.s=s;
+        newdfa.symbols = symbols;
         newdfa.transitions=transitions;
         newdfa.F=nodes;
         for(int e: F)
@@ -441,21 +504,126 @@ public:
 
     friend bool operator<(const g_symbol& l, const g_symbol& r)
     {
+        if(l.type=="S" && r.type=="S")
+            return 0;
         return std::tie(l.type, l.terminal, l.q1, l.v, l.q2) < std::tie(r.type, r.terminal, r.q1, r.v, r.q2); // keep the same order
+    }
+
+    string to_graph_name() const
+    {
+        if (type=="S")
+            return "S";
+        else if (type=="triple")
+            return std::to_string(q1)+v+std::to_string(q2);
+        else if (type=="terminal")
+            return terminal;
+    }
+
+    string to_string() const
+    {
+        if (type=="S")
+            return "S";
+        else if (type=="triple")
+            return "["+std::to_string(q1)+", "+v+", "+std::to_string(q2)+ "]";
+        else if (type=="terminal")
+            return terminal;
+
     }
 };
 
+string rule_to_string(g_symbol sym, vector<g_symbol> l)
+{
+    string res=sym.to_string();
+    for(auto& a: l)
+        res += a.to_string();
+    return res; 
+}
 
 class grammar
 {
+private:
+
 public:
     map<g_symbol, set<vector<g_symbol>>> rules;
-
-
     set<g_symbol> generating_symbol;
+    
 
-    string derivation()
+    const int maxnodes=300;
+    int currnode=0;
+    set<string> loopavoid;
+    string curtab="";
+
+    void lm_derivation(g_symbol sym)
     {
+        currnode++;
+        if (currnode>maxnodes){
+            cout << "...";
+            return;
+        }
+        bool bloopavoid=true;
+findrule:
+        for(auto& result: rules[sym])
+        {
+            if(loopavoid.count(rule_to_string(sym, result))!=0 && bloopavoid){
+                continue;
+            }
+
+            if( all_of( result.begin(), 
+                        result.end(), 
+                        [this](g_symbol const &ent3)
+                {
+                    return ent3.type=="terminal" || generating_symbol.count(ent3)==1;
+                }))
+            {
+                loopavoid.insert(rule_to_string(sym, result));
+                list<g_symbol> result_list={};
+               // cout << sym.to_string() << " => ";
+                for(auto& res_elem: result)
+                {
+                   //cout << res_elem.to_string();
+                }
+                //cout << endl;
+                for(auto& res_elem: result)
+                {
+                    if(res_elem.type=="terminal")
+                    {
+                         if (currnode>maxnodes)
+                            return;
+                        if(res_elem.terminal=="eps"){
+                            cout << "\n"<< curtab<< ")";
+                            curtab=curtab.substr(0, curtab.size()-1);
+                        }
+                        else
+                        {
+                            cout << "(";
+                            curtab+="\t";
+                        }
+                    }
+                    else
+                    {
+                        if (currnode>maxnodes)
+                            return;
+                        cout <<"\n[q" << res_elem.q1 << "]\t" <<curtab<<res_elem.v;
+                        lm_derivation(res_elem);
+                    }
+                }
+                
+                return;
+            }
+        }
+        bloopavoid=false;
+        goto findrule;
+    }
+
+    void print_counter_example()
+    {
+        g_symbol S;
+        S.type="S";
+        currnode=0;
+        cout << "\n( ";
+        lm_derivation(S);
+        cout << "\b\b\b\b";
+        cout << endl;
     }
 
     bool is_empty_lang()
@@ -465,7 +633,80 @@ public:
 
         return generating_symbol.count(S)==0;
     }
-    
+    void dump_graph()
+    {
+
+        pid_t pid = fork();
+        vector<string> terminals;
+        vector<string> triples;
+        if(pid ==0)
+        {
+            int status;
+            ofstream myfile;
+            string filename ="dumps/grammar-"+time_stamp();
+            myfile.open (filename+".gv");
+            
+            myfile << "digraph G {\n";
+            myfile << "\tsize = \"4,4\";\n";
+
+            myfile << "\trankdir = LR\n";
+           // myfile << "\tnode [shape = doublecircle];";
+            
+           /* for(int e: F)
+            {
+                myfile << " q"<< e<<";";
+            }*/
+           // myfile << "\n\tnode [shape = point]; point_q0;\n";
+          //  myfile << "\tnode [shape = circle];\n";
+            //myfile << "\t point_q0 -> q"<< s << "\n";
+            
+            /*for(trans e: transitions)
+            {
+                myfile << "\tq" << e.from << " -> q" << e.to << "[label=\""<< e.symbol <<"\"]\n";
+            }*/
+            for(auto const &ent1: rules )
+            {
+                for(vector<g_symbol> const &ent2: ent1.second)
+                {
+                    for(g_symbol const &ent3: ent2)
+                    {
+                        myfile << "\t\"" << ent1.first.to_graph_name() << "\" -> ";
+                        myfile << "\"" << ent3.to_graph_name() << "\"";
+                        myfile << "\n";
+                    }
+                }
+            }
+
+           
+            myfile << "}\n";
+
+            myfile.close();
+            char* arg_v[6];
+            arg_v[0]=strdup("dot");
+            arg_v[1]=strdup("-Tps");
+            arg_v[2]=strdup((filename+".gv").c_str());
+            arg_v[3]=strdup("-o");
+            arg_v[4]=strdup((filename+".ps").c_str());
+            arg_v[5]= NULL;
+            pid = execute_command(arg_v[0], arg_v);
+            waitpid(pid, &status, 0);
+            char* arg_v2[2];
+            arg_v2[0]=strdup("evince");
+            arg_v2[1]=strdup((filename+".ps").c_str());
+            execvp(arg_v2[0], arg_v2);
+            exit(0);
+
+        }
+        else if(pid ==-1)
+        {
+            printf("failed to fork!\n");
+            exit(0);
+        }
+        
+        
+        return;
+    }
+
     void print()
     {
         for(auto const &ent1: rules )
@@ -552,7 +793,7 @@ public:
 };
 
 
-grammar fg_dfa_product(flowgraph fg, dfa mydfa)
+grammar fg_dfa_product(flowgraph& fg, dfa& mydfa)
 {
     grammar res;
     g_symbol S;
@@ -581,10 +822,8 @@ grammar fg_dfa_product(flowgraph fg, dfa mydfa)
     {
         //if(!fe.epsilon)
         //    continue;
-        if(fe.method!="eps")
-        {
+        if(fe.method!="eps" && mydfa.symbols.count(fe.method)!=0 )
             continue;
-        }
 
         for(auto qa: mydfa.nodes)
         {
@@ -611,10 +850,7 @@ grammar fg_dfa_product(flowgraph fg, dfa mydfa)
 
     for(flowedge fe: fg.edges)
     {
-        //if(fe.epsilon)
-        //    continue;
-
-        if(fe.method=="eps")
+        if(fe.method=="eps" || mydfa.symbols.count(fe.method)==0)
             continue;
 
         for(auto qa: mydfa.nodes)
@@ -625,11 +861,18 @@ grammar fg_dfa_product(flowgraph fg, dfa mydfa)
                 {
                     for(auto qd: mydfa.nodes)
                     {
-                        string vk = fg.methods[fe.method].entry;
+                        g_symbol to2;
                         g_symbol from;
                         g_symbol to1;
-                        g_symbol to2;
                         g_symbol to3;
+
+                        if(fg.methods.count(fe.method)!=0)
+                        {
+                            string vk = fg.methods[fe.method].entry; 
+                            to2.q1      = qb;
+                            to2.v       = vk;
+                            to2.q2      = qc;
+                        }
                         from.type   = "triple";
                         to1.type    = "triple";
                         to2.type    = "triple";
@@ -639,14 +882,25 @@ grammar fg_dfa_product(flowgraph fg, dfa mydfa)
                         from.q2     = qd;
                         to1.q1      = qa;
                         to1.v       = fe.method;
-                        to1.q1      = qb;
-                        to2.q1      = qb;
-                        to2.v       = vk;
-                        to2.q2      = qc;
+                        to1.q2      = qb;
                         to3.q1      = qc;
                         to3.v       = fe.to;
                         to3.q2      = qd;
-                        res.rules[from].insert(vector<g_symbol>{to1, to2, to3});
+
+                        if(fg.methods.count(fe.method)!=0)
+                        {
+                            res.rules[from].insert(vector<g_symbol>{to1, to2, to3});
+                        }
+                        else
+                        {
+                            g_symbol ep;
+                            ep.type="terminal";
+                            ep.terminal="eps";
+                            to3.q1      = qb;
+                            to3.q2      = qc;
+                            from.q2     = qc;
+                            res.rules[from].insert(vector<g_symbol>{to1,ep, to3});
+                        }
                     }
                 }
             }
@@ -709,24 +963,39 @@ int main( int argc, const char* argv[] )
 
     printf( "\nHello World (%s, %s) \n\n", argv[1], argv[2] );
 
+    if(argc>=4)
+    {
+        cout << "AOEUANOEUETNUEUT!\n";
+        cout << argv[3]<<endl;
+        if(string(argv[3])=="-c")
+        {
+            enable_complete=true;
+            cout << "ANTINTOINOINI!\n";
+        }
+    }
     string ctf_file_name= argv[1];
     string spec_file_name= argv[2];
 
     flowgraph cfg(ctf_file_name);
     cfg.print_graph();
-    dfa lelwhat(spec_file_name);
-   // lelwhat.print_graph();
-    lelwhat.invert().print_graph();
-   lelwhat=lelwhat.invert(); 
+    set<string> methods;
+    for(auto& imap: cfg.methods){
+        methods.insert(imap.first);
+    }
+    dfa lelwhat(spec_file_name, methods);
+    lelwhat.print_graph();
+    lelwhat=lelwhat.invert(); 
     grammar resultgrammer= fg_dfa_product(cfg, lelwhat);
+    resultgrammer.dump_graph();
     resultgrammer.find_all_generating();
     resultgrammer.print();
     if(resultgrammer.is_empty_lang())
     {
-        cout << "IS EMPTY!!!!\n";
+        cout << "Spec Holds\n";
     }
     else 
     {
-        cout << "Is not EMPTY!!! \n";
+        cout << "Spec Does not hold!!!\nHere is a countre example:\n";
+        resultgrammer.print_counter_example();
     }
 }
